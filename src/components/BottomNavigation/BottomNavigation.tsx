@@ -2,10 +2,13 @@ import * as React from 'react';
 import {
   Animated,
   ColorValue,
+  Dimensions,
+  Easing,
   EasingFunction,
   Platform,
   StyleProp,
   StyleSheet,
+  TouchableWithoutFeedbackProps,
   View,
   ViewStyle,
 } from 'react-native';
@@ -18,7 +21,6 @@ import { useInternalTheme } from '../../core/theming';
 import type { ThemeProp } from '../../types';
 import useAnimatedValueArray from '../../utils/useAnimatedValueArray';
 import type { IconSource } from '../Icon';
-import { Props as TouchableRippleProps } from '../TouchableRipple/TouchableRipple';
 
 export type BaseRoute = {
   key: string;
@@ -26,9 +28,6 @@ export type BaseRoute = {
   focusedIcon?: IconSource;
   unfocusedIcon?: IconSource;
   badge?: string | number | boolean;
-  /**
-   * @deprecated In v5.x works only with theme version 2.
-   */
   color?: string;
   accessibilityLabel?: string;
   testID?: string;
@@ -45,7 +44,7 @@ type TabPressEvent = {
   preventDefault(): void;
 };
 
-type TouchableProps<Route extends BaseRoute> = TouchableRippleProps & {
+type TouchableProps<Route extends BaseRoute> = TouchableWithoutFeedbackProps & {
   key: string;
   route: Route;
   children: React.ReactNode;
@@ -167,7 +166,7 @@ export type Props<Route extends BaseRoute> = {
   }) => React.ReactNode;
   /**
    * Callback which returns a React element to be used as the touchable for the tab item.
-   * Renders a `TouchableRipple` on Android and `Pressable` on iOS.
+   * Renders a `TouchableRipple` on Android and `TouchableWithoutFeedback` with `View` on iOS.
    */
   renderTouchable?: (props: TouchableProps<Route>) => React.ReactNode;
   /**
@@ -402,9 +401,9 @@ const BottomNavigation = <Route extends BaseRoute>({
         ...navigationState.routes.map((_, i) =>
           Animated.timing(tabsPositionAnims[i], {
             toValue: i === index ? 0 : i >= index ? 1 : -1,
-            duration: theme.isV3 || shifting ? 150 * scale : 0,
+            duration: theme.isV3 || shifting ? 100: 0,
             useNativeDriver: true,
-            easing: sceneAnimationEasing,
+            easing: Easing.linear
           })
         ),
       ]).start(({ finished }) => {
@@ -503,14 +502,16 @@ const BottomNavigation = <Route extends BaseRoute>({
           const renderToHardwareTextureAndroid =
             sceneAnimationEnabled && focused;
 
+          const a = 1
+
           const opacity = sceneAnimationEnabled
             ? tabsPositionAnims[index].interpolate({
-                inputRange: [-1, 0, 1],
-                outputRange: [0, 1, 0],
+                inputRange: [-a, 0, a],
+                outputRange: [a, 1, a],
               })
             : focused
             ? 1
-            : 0;
+            : a;
 
           const offsetTarget = focused ? 0 : FAR_FAR_AWAY;
 
@@ -525,7 +526,7 @@ const BottomNavigation = <Route extends BaseRoute>({
             sceneAnimationType === 'shifting'
               ? tabsPositionAnims[index].interpolate({
                   inputRange: [-1, 0, 1],
-                  outputRange: [-50, 0, 50],
+                  outputRange: [-(Dimensions.get("screen").width /1 ), 0, (Dimensions.get("screen").width / 1)],
                 })
               : 0;
 
@@ -638,3 +639,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
